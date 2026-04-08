@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -95,7 +96,7 @@ fun GroupDetailScreen(
                             modifier = Modifier.padding(24.dp).fillMaxWidth(),
                             horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
                         ) {
-                            Icon(androidx.compose.material.icons.Icons.Default.Star, "Coming Soon")
+                            Icon(Icons.Default.Info, "Coming Soon")
                             Spacer(modifier = Modifier.height(8.dp))
                             Text("More Features Coming Soon!", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                             Text("Settle up reminders, bill exports, and dynamic group links are on the way.", style = MaterialTheme.typography.bodySmall, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
