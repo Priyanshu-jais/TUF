@@ -9,6 +9,7 @@ import com.example.tuf.presentation.screens.recurring.RecurringViewModel
 import com.example.tuf.presentation.screens.search.SearchViewModel
 import com.example.tuf.presentation.screens.settings.SettingsViewModel
 import com.example.tuf.presentation.screens.transactions.TransactionViewModel
+import com.example.tuf.presentation.screens.split.SplitViewModel
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 
@@ -71,13 +72,12 @@ val viewModelModule = module {
     viewModel {
         SearchViewModel(searchTransactionsUseCase = get(), getCategoriesUseCase = get())
     }
-    viewModel {
-        CategoryViewModel(
-            getCategoriesUseCase = get(),
-            addCategoryUseCase = get(),
-            updateCategoryUseCase = get(),
-            deleteCategoryUseCase = get()
-        )
-    }
+    viewModel { CategoryViewModel(
+        getCategoriesUseCase = get(),
+        addCategoryUseCase = get(),
+        updateCategoryUseCase = get(),
+        deleteCategoryUseCase = get()
+    ) }
     viewModel { OnboardingViewModel(dataStoreManager = get()) }
+    viewModel { SplitViewModel(get(), get(), get(), get(), get(), get()) }
 }

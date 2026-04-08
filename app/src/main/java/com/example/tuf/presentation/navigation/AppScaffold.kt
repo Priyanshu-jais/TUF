@@ -26,11 +26,14 @@ private val screensWithBottomNav = setOf(
     Screen.Dashboard.route,
     Screen.Transactions.route,
     Screen.Analytics.route,
-    Screen.Budget.route
+    Screen.Budget.route,
+    Screen.SplitList.route
 )
 
 private val screensWithoutScaffold = setOf(
     Screen.Onboarding.route,
+    Screen.Login.route,
+    Screen.Profile.route,
     Screen.AddTransaction.route.substringBefore("?"),
     Screen.TransactionDetail.route.substringBefore("/")
 )
@@ -52,6 +55,7 @@ fun AppScaffold(
     val showBottomBar = bottomNavItems.any { currentRoute.startsWith(it.route) }
 
     val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -78,7 +82,8 @@ fun AppScaffold(
                 NavGraph(
                     navController = navController,
                     startDestination = startDestination,
-                    onThemeToggle = onThemeToggle
+                    onThemeToggle = onThemeToggle,
+                    onMenuClick = { scope.launch { drawerState.open() } }
                 )
             }
         }
@@ -173,12 +178,14 @@ private fun AppDrawerContent(
         val drawerItems = listOf(
             Triple(Screen.Dashboard.route, Icons.Default.Home, "Dashboard"),
             Triple(Screen.Transactions.route, Icons.Default.SwapHoriz, "Transactions"),
+            Triple(Screen.SplitList.route, Icons.Default.Group, "Group Split"),
             Triple(Screen.Analytics.route, Icons.Default.BarChart, "Analytics"),
             Triple(Screen.Budget.route, Icons.Default.PieChart, "Budget"),
             Triple(Screen.Recurring.route, Icons.Default.Autorenew, "Recurring"),
             Triple(Screen.Search.route, Icons.Default.Search, "Search"),
             Triple(Screen.Categories.route, Icons.Default.Category, "Categories"),
-            Triple(Screen.Settings.route, Icons.Default.Settings, "Settings")
+            Triple(Screen.Settings.route, Icons.Default.Settings, "Settings"),
+            Triple(Screen.Profile.route, Icons.Default.Person, "Profile")
         )
 
         drawerItems.forEach { (route, icon, label) ->

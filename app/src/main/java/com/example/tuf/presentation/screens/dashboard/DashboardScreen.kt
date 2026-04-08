@@ -11,8 +11,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.unit.dp
 import com.example.tuf.core.extensions.toRelativeDateLabel
 import com.example.tuf.domain.model.TransactionType
@@ -21,6 +25,9 @@ import com.example.tuf.presentation.components.getCategoryEmoji
 import com.example.tuf.ui.theme.*
 import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
+import com.example.tuf.data.local.DataStoreManager
+import kotlinx.coroutines.launch
 
 /**
  * Dashboard / Home screen showing the monthly financial overview,
@@ -34,11 +41,21 @@ fun DashboardScreen(
     onNavigateToTransactions: () -> Unit,
     onNavigateToAllBudgets: () -> Unit,
     onNavigateToAnalytics: () -> Unit,
-    onThemeToggle: () -> Unit
+    onNavigateToDetail: (Long) -> Unit,
+    onThemeToggle: () -> Unit,
+    onMenuClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val selectedMonth by viewModel.selectedMonth.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    
+    val dataStoreManager: DataStoreManager = koinInject()
+    val isFtuxCompleted by dataStoreManager.isFtuxCompleted.collectAsState(initial = true)
+    val userName by dataStoreManager.userName.collectAsState(initial = "User")
+    val profilePicUri by dataStoreManager.profilePicUri.collectAsState(initial = null)
+    
+    var tooltipStep by remember(isFtuxCompleted) { mutableStateOf(if (isFtuxCompleted) 0 else 1) }
 
     LaunchedEffect(Unit) {
         viewModel.events.collectLatest { event ->
@@ -59,6 +76,8 @@ fun DashboardScreen(
             DashboardShimmer()
             return@Scaffold
         }
+        
+        Box(modifier = Modifier.fillMaxSize()) {
 
         LazyColumn(
             modifier = Modifier
@@ -75,21 +94,55 @@ fun DashboardScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
-                        Text(
-                            "Good ${getGreeting()} 👋",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                        )
-                        Text(
-                            "Finance Manager",
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
+                    // LEFT: Menu Icon + Greeting
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = onMenuClick) {
+                            Icon(Icons.Default.Menu, contentDescription = "Menu", tint = MaterialTheme.colorScheme.primary)
+                        }
+                        Column {
+                            Text(
+                                "Good ${getGreeting()}, $userName 👋",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            )
+                            Text(
+                                "Finance Manager",
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
                     }
-                    IconButton(onClick = onThemeToggle) {
-                        Icon(Icons.Default.DarkMode, "Toggle theme", tint = MaterialTheme.colorScheme.primary)
+                    
+                    // RIGHT: Theme toggle & Profile Avatar
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = onThemeToggle) {
+                            Icon(Icons.Default.DarkMode, "Toggle theme", tint = MaterialTheme.colorScheme.primary)
+                        }
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(42.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primaryContainer),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (profilePicUri != null) {
+                                AsyncImage(
+                                    model = profilePicUri,
+                                    contentDescription = "Profile Picture",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Text(
+                                    text = userName.take(1).uppercase(),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -241,7 +294,8 @@ fun DashboardScreen(
                     ) {
                         TransactionItem(
                             transaction = transaction,
-                            currencySymbol = uiState.currencySymbol
+                            currencySymbol = uiState.currencySymbol,
+                            onClick = { onNavigateToDetail(transaction.id) }
                         )
                     }
                 }
@@ -272,6 +326,34 @@ fun DashboardScreen(
                     }
                 }
             }
+        }
+        
+        // Render Multi-step FTUX Toolkit
+        if (tooltipStep == 1) {
+            Tooltip(
+                text = "Welcome to TUF! 🎉\nTap the hamburger menu on the top left to open your sidebar.",
+                isVisible = true,
+                onDismiss = { tooltipStep = 2 },
+                modifier = Modifier.align(Alignment.TopStart).padding(top = 80.dp, start = 16.dp)
+            )
+        } else if (tooltipStep == 2) {
+            Tooltip(
+                text = "Manage everything easily.\nTap the Add Income or Expense buttons to log money.",
+                isVisible = true,
+                onDismiss = { tooltipStep = 3 },
+                modifier = Modifier.align(Alignment.Center)
+            )
+        } else if (tooltipStep == 3) {
+            Tooltip(
+                text = "Set Budgets per category and \nget notified if you overspend! Let's get started.",
+                isVisible = true,
+                onDismiss = {
+                    tooltipStep = 0
+                    scope.launch { dataStoreManager.setFtuxCompleted(true) }
+                },
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 120.dp)
+            )
+        }
         }
     }
 }

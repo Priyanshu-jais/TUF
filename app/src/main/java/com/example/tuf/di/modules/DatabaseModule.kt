@@ -9,8 +9,9 @@ import org.koin.dsl.module
  */
 val databaseModule = module {
     single { AppDatabase.create(androidContext()) }
-    single { get<AppDatabase>().transactionDao() }
-    single { get<AppDatabase>().categoryDao() }
-    single { get<AppDatabase>().budgetDao() }
-    single { get<AppDatabase>().recurringDao() }
+    single { get<com.example.tuf.data.local.db.AppDatabase>().transactionDao() }
+    single { get<com.example.tuf.data.local.db.AppDatabase>().categoryDao() }
+    single { get<com.example.tuf.data.local.db.AppDatabase>().budgetDao() }
+    single { get<com.example.tuf.data.local.db.AppDatabase>().recurringDao() }
+    single { get<com.example.tuf.data.local.db.AppDatabase>().splitDao() }
 }

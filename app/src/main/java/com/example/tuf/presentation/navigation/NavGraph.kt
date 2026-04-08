@@ -24,7 +24,15 @@ import com.example.tuf.presentation.screens.settings.SettingsScreen
 import com.example.tuf.presentation.screens.transactions.AddTransactionScreen
 import com.example.tuf.presentation.screens.transactions.TransactionDetailScreen
 import com.example.tuf.presentation.screens.transactions.TransactionListScreen
+import com.example.tuf.presentation.screens.auth.LoginScreen
+import com.example.tuf.presentation.screens.profile.ProfileScreen
+import com.example.tuf.presentation.screens.split.GroupListScreen
+import com.example.tuf.presentation.screens.split.GroupDetailScreen
+import com.example.tuf.presentation.screens.split.AddGroupExpenseScreen
+import com.example.tuf.data.local.DataStoreManager
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
 
 private const val TRANSITION_DURATION = 300
 
@@ -36,7 +44,8 @@ private const val TRANSITION_DURATION = 300
 fun NavGraph(
     navController: NavHostController,
     startDestination: String,
-    onThemeToggle: () -> Unit
+    onThemeToggle: () -> Unit,
+    onMenuClick: () -> Unit
 ) {
     NavHost(
         navController = navController,
@@ -70,7 +79,42 @@ fun NavGraph(
             OnboardingScreen(
                 onNavigateToDashboard = {
                     navController.navigate(Screen.Dashboard.route) {
-                        popUpTo(Screen.Onboarding.route) { inclusive = true }
+                        popUpTo(navController.graph.id) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(Screen.Login.route) {
+            val scope = androidx.compose.runtime.rememberCoroutineScope()
+            val dataStoreManager: DataStoreManager = koinInject()
+            val isOnboardingCompleted by dataStoreManager.isOnboardingCompleted.collectAsState(initial = false)
+            
+            LoginScreen(
+                onLoginSuccess = { userName ->
+                    scope.launch {
+                        dataStoreManager.setUserName(userName)
+                        dataStoreManager.setLoggedIn(true)
+                        if (isOnboardingCompleted) {
+                            navController.navigate(Screen.Dashboard.route) {
+                                popUpTo(navController.graph.id) { inclusive = true }
+                            }
+                        } else {
+                            navController.navigate(Screen.Onboarding.route) {
+                                popUpTo(navController.graph.id) { inclusive = true }
+                            }
+                        }
+                    }
+                }
+            )
+        }
+
+        composable(Screen.Profile.route) {
+            ProfileScreen(
+                onNavigateBack = { navController.navigateUp() },
+                onLogout = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(0) { inclusive = true }
                     }
                 }
             )
@@ -84,7 +128,9 @@ fun NavGraph(
                 onNavigateToTransactions = { navController.navigate(Screen.Transactions.route) },
                 onNavigateToAllBudgets = { navController.navigate(Screen.Budget.route) },
                 onNavigateToAnalytics = { navController.navigate(Screen.Analytics.route) },
-                onThemeToggle = onThemeToggle
+                onNavigateToDetail = { id -> navController.navigate(Screen.TransactionDetail.createRoute(id)) },
+                onThemeToggle = onThemeToggle,
+                onMenuClick = onMenuClick
             )
         }
 
@@ -98,6 +144,9 @@ fun NavGraph(
                 },
                 onNavigateToEdit = { id ->
                     navController.navigate(Screen.AddTransaction.createRoute(transactionId = id))
+                },
+                onNavigateToGroupSplit = {
+                    navController.navigate(Screen.SplitList.route)
                 },
                 onNavigateBack = { navController.navigateUp() }
             )
@@ -168,6 +217,36 @@ fun NavGraph(
 
         composable(Screen.Categories.route) {
             CategoryScreen(onNavigateBack = { navController.navigateUp() })
+        }
+
+        composable(Screen.SplitList.route) {
+            GroupListScreen(
+                onNavigateBack = { navController.navigateUp() },
+                onNavigateToGroup = { id -> navController.navigate(Screen.SplitDetail.createRoute(id)) }
+            )
+        }
+
+        composable(
+            route = Screen.SplitDetail.route,
+            arguments = listOf(navArgument("groupId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val groupId = backStackEntry.arguments?.getLong("groupId") ?: -1L
+            GroupDetailScreen(
+                groupId = groupId,
+                onNavigateBack = { navController.navigateUp() },
+                onNavigateToAddExpense = { id -> navController.navigate(Screen.AddSplit.createRoute(id)) }
+            )
+        }
+
+        composable(
+            route = Screen.AddSplit.route,
+            arguments = listOf(navArgument("groupId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val groupId = backStackEntry.arguments?.getLong("groupId") ?: -1L
+            AddGroupExpenseScreen(
+                groupId = groupId,
+                onNavigateBack = { navController.navigateUp() }
+            )
         }
     }
 }

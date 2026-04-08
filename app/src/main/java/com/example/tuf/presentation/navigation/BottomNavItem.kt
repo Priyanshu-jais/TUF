@@ -9,6 +9,8 @@ import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.PieChart
 import androidx.compose.material.icons.outlined.SwapHoriz
+import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.outlined.Group
 import androidx.compose.ui.graphics.vector.ImageVector
 
 /**
@@ -50,5 +52,11 @@ val bottomNavItems = listOf(
         label = "Budget",
         selectedIcon = Icons.Filled.PieChart,
         unselectedIcon = Icons.Outlined.PieChart
+    ),
+    BottomNavItem(
+        route = Screen.SplitList.route,
+        label = "Split",
+        selectedIcon = Icons.Filled.Group,
+        unselectedIcon = Icons.Outlined.Group
     )
 )

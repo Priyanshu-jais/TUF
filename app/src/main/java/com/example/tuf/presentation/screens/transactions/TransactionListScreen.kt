@@ -33,6 +33,7 @@ fun TransactionListScreen(
     onNavigateToAddTransaction: (String) -> Unit,
     onNavigateToDetail: (Long) -> Unit,
     onNavigateToEdit: (Long) -> Unit,
+    onNavigateToGroupSplit: () -> Unit,
     onNavigateBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -126,6 +127,15 @@ fun TransactionListScreen(
                                 onNavigateToAddTransaction(TransactionType.EXPENSE.name)
                             },
                             containerColor = Color(0xFFFF4757)
+                        )
+                        ExtendedFloatingActionButton(
+                            text = { Text("Group Expenses", color = Color.White) },
+                            icon = { Icon(Icons.Default.Group, null, tint = Color.White) },
+                            onClick = {
+                                showFabMenu = false
+                                onNavigateToGroupSplit()
+                            },
+                            containerColor = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
@@ -246,13 +256,13 @@ private fun SwipeableTransactionItem(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = Spacing.md, vertical = 2.dp),
-            onClick = onClick,
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(1.dp)
         ) {
             TransactionItem(
                 transaction = transaction,
-                currencySymbol = currencySymbol
+                currencySymbol = currencySymbol,
+                onClick = onClick
             )
         }
     }

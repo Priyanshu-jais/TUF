@@ -31,6 +31,11 @@ class DataStoreManager(private val context: Context) {
         val ACCENT_COLOR = stringPreferencesKey(Constants.PREF_ACCENT_COLOR)
         val MONTH_START_DAY = intPreferencesKey(Constants.PREF_MONTH_START_DAY)
         val BACKUP_REMINDER = booleanPreferencesKey(Constants.PREF_BACKUP_REMINDER)
+        
+        val IS_LOGGED_IN = booleanPreferencesKey("pref_is_logged_in")
+        val USER_NAME = stringPreferencesKey("pref_user_name")
+        val PROFILE_PIC_URI = stringPreferencesKey("pref_profile_pic_uri")
+        val IS_FTUX_COMPLETED = booleanPreferencesKey("pref_is_ftux_completed")
     }
 
     private val dataStore = context.dataStore
@@ -107,5 +112,45 @@ class DataStoreManager(private val context: Context) {
 
     suspend fun setBackupReminderEnabled(enabled: Boolean) {
         dataStore.edit { it[Keys.BACKUP_REMINDER] = enabled }
+    }
+
+    // ─── User Profile & Auth ──────────────────────────────────────────────────
+    val isLoggedIn: Flow<Boolean> = dataStore.data.safeMap(false) { prefs ->
+        prefs[Keys.IS_LOGGED_IN] ?: false
+    }
+
+    suspend fun setLoggedIn(loggedIn: Boolean) {
+        dataStore.edit { it[Keys.IS_LOGGED_IN] = loggedIn }
+    }
+
+    val userName: Flow<String> = dataStore.data.safeMap("User") { prefs ->
+        prefs[Keys.USER_NAME] ?: "User"
+    }
+
+    suspend fun setUserName(name: String) {
+        dataStore.edit { it[Keys.USER_NAME] = name }
+    }
+
+    val profilePicUri: Flow<String?> = dataStore.data.safeMap(null as String?) { prefs ->
+        prefs[Keys.PROFILE_PIC_URI]
+    }
+
+    suspend fun setProfilePicUri(uri: String?) {
+        dataStore.edit {
+            if (uri != null) {
+                it[Keys.PROFILE_PIC_URI] = uri
+            } else {
+                it.remove(Keys.PROFILE_PIC_URI)
+            }
+        }
+    }
+
+    // ─── FTUX (First Time User Experience) ────────────────────────────────────
+    val isFtuxCompleted: Flow<Boolean> = dataStore.data.safeMap(false) { prefs ->
+        prefs[Keys.IS_FTUX_COMPLETED] ?: false
+    }
+
+    suspend fun setFtuxCompleted(completed: Boolean) {
+        dataStore.edit { it[Keys.IS_FTUX_COMPLETED] = completed }
     }
 }

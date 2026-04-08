@@ -1,6 +1,7 @@
 package com.example.tuf.di.modules
 
 import com.example.tuf.domain.usecase.*
+import com.example.tuf.domain.usecase.split.*
 import org.koin.dsl.module
 
 /**
@@ -43,6 +44,14 @@ val useCaseModule = module {
     factory { UpdateRecurringUseCase(get()) }
     factory { DeleteRecurringUseCase(get()) }
     factory { ProcessDueRecurringUseCase(get(), get()) }
+
+    // Split Group Use cases
+    factory { GetGroupsUseCase(get()) }
+    factory { AddGroupUseCase(get()) }
+    factory { DeleteGroupUseCase(get()) }
+    factory { GetGroupExpensesUseCase(get()) }
+    factory { AddSplitExpenseUseCase(get()) }
+    factory { DeleteSplitExpenseUseCase(get()) }
 
     // Export
     factory { ExportTransactionsUseCase(get()) }

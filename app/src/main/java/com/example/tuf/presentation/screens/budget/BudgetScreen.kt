@@ -38,6 +38,7 @@ fun BudgetScreen(
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var showAddBudgetSheet by remember { mutableStateOf(false) }
+    var budgetToEdit by remember { mutableStateOf<com.example.tuf.domain.model.Budget?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.events.collectLatest { event ->
@@ -51,11 +52,21 @@ fun BudgetScreen(
         AddBudgetBottomSheet(
             categories = uiState.expenseCategories,
             currencySymbol = uiState.currencySymbol,
+            budgetToEdit = budgetToEdit,
             onSave = { categoryId, limit ->
                 viewModel.addOrUpdateBudget(categoryId, limit)
                 showAddBudgetSheet = false
+                budgetToEdit = null
             },
-            onDismiss = { showAddBudgetSheet = false }
+            onDelete = {
+                budgetToEdit?.let { viewModel.deleteBudget(it) }
+                showAddBudgetSheet = false
+                budgetToEdit = null
+            },
+            onDismiss = { 
+                showAddBudgetSheet = false 
+                budgetToEdit = null
+            }
         )
     }
 
@@ -69,7 +80,10 @@ fun BudgetScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { showAddBudgetSheet = true },
+                onClick = { 
+                    budgetToEdit = null
+                    showAddBudgetSheet = true 
+                },
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
                 Icon(Icons.Default.Add, "Add budget", tint = Color.White)
@@ -122,7 +136,7 @@ fun BudgetScreen(
                     subtitle = "Tap + to set your first monthly budget",
                     emoji = "💰",
                     actionLabel = "Set Budget",
-                    onAction = { showAddBudgetSheet = true }
+                    onAction = { showAddBudgetSheet = true; budgetToEdit = null }
                 )
             } else {
                 Column(
@@ -133,7 +147,10 @@ fun BudgetScreen(
                         BudgetProgressCard(
                             progress = progress,
                             currencySymbol = uiState.currencySymbol,
-                            onClick = { showAddBudgetSheet = true }
+                            onClick = { 
+                                budgetToEdit = progress.budget
+                                showAddBudgetSheet = true 
+                            }
                         )
                     }
                 }
@@ -182,11 +199,13 @@ private fun BudgetDonutRing(
 private fun AddBudgetBottomSheet(
     categories: List<Category>,
     currencySymbol: String,
+    budgetToEdit: com.example.tuf.domain.model.Budget?,
     onSave: (Long, Double) -> Unit,
+    onDelete: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    var selectedCategory by remember { mutableStateOf<Category?>(null) }
-    var limitText by remember { mutableStateOf("") }
+    var selectedCategory by remember(budgetToEdit) { mutableStateOf(budgetToEdit?.category) }
+    var limitText by remember(budgetToEdit) { mutableStateOf(budgetToEdit?.limitAmount?.toString() ?: "") }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(modifier = Modifier.padding(Spacing.md).padding(bottom = 32.dp)) {
@@ -234,7 +253,21 @@ private fun AddBudgetBottomSheet(
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape = MaterialTheme.shapes.large
             ) {
-                Text("Save Budget", fontWeight = FontWeight.Bold)
+                Text(if (budgetToEdit != null) "Update Budget" else "Save Budget", fontWeight = FontWeight.Bold)
+            }
+            
+            if (budgetToEdit != null) {
+                Spacer(Modifier.height(Spacing.sm))
+                OutlinedButton(
+                    onClick = onDelete,
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = MaterialTheme.shapes.large,
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Icon(Icons.Default.Delete, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Remove Budget", fontWeight = FontWeight.Bold)
+                }
             }
         }
     }

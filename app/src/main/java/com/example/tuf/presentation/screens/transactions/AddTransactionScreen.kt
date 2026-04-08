@@ -63,6 +63,7 @@ fun AddTransactionScreen(
 
     val scope = rememberCoroutineScope()
     val addTransactionUseCase = koinInject<com.example.tuf.domain.usecase.AddTransactionUseCase>()
+    val updateTransactionUseCase = koinInject<com.example.tuf.domain.usecase.UpdateTransactionUseCase>()
     val addRecurringUseCase = koinInject<com.example.tuf.domain.usecase.AddRecurringTransactionUseCase>()
 
     // Validation
@@ -75,6 +76,19 @@ fun AddTransactionScreen(
         if (showSuccess) {
             kotlinx.coroutines.delay(800)
             onNavigateBack()
+        }
+    }
+
+    LaunchedEffect(transactionId, uiState.transactions) {
+        if (transactionId > 0 && amount.isEmpty()) {
+            val tx = uiState.transactions.find { it.id == transactionId }
+            if (tx != null) {
+                amount = tx.amount.toString()
+                selectedType = tx.type
+                selectedCategory = tx.category
+                note = tx.note
+                selectedDate = tx.date
+            }
         }
     }
 
@@ -372,26 +386,39 @@ fun AddTransactionScreen(
                                 isSaving = true
                                 scope.launch {
                                     try {
-                                        val transaction = Transaction(
-                                            amount = amount.toDouble(),
-                                            type = selectedType,
-                                            category = selectedCategory!!,
-                                            note = note,
-                                            date = selectedDate,
-                                            createdAt = DateUtils.now()
-                                        )
-                                        addTransactionUseCase(transaction)
-                                        if (isRecurring) {
-                                            val recurring = RecurringTransaction(
-                                                amount = transaction.amount,
+                                        if (transactionId > 0) {
+                                            val updatedTransaction = Transaction(
+                                                id = transactionId,
+                                                amount = amount.toDouble(),
                                                 type = selectedType,
                                                 category = selectedCategory!!,
-                                                frequency = frequency,
-                                                startDate = selectedDate,
-                                                nextDueDate = selectedDate,
-                                                note = note
+                                                note = note,
+                                                date = selectedDate,
+                                                createdAt = DateUtils.now() // Or keep old
                                             )
-                                            addRecurringUseCase(recurring)
+                                            updateTransactionUseCase(updatedTransaction)
+                                        } else {
+                                            val transaction = Transaction(
+                                                amount = amount.toDouble(),
+                                                type = selectedType,
+                                                category = selectedCategory!!,
+                                                note = note,
+                                                date = selectedDate,
+                                                createdAt = DateUtils.now()
+                                            )
+                                            addTransactionUseCase(transaction)
+                                            if (isRecurring) {
+                                                val recurring = RecurringTransaction(
+                                                    amount = transaction.amount,
+                                                    type = selectedType,
+                                                    category = selectedCategory!!,
+                                                    frequency = frequency,
+                                                    startDate = selectedDate,
+                                                    nextDueDate = selectedDate,
+                                                    note = note
+                                                )
+                                                addRecurringUseCase(recurring)
+                                            }
                                         }
                                         showSuccess = true
                                     } catch (e: Exception) {

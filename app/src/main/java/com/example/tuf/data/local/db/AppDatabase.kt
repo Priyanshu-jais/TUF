@@ -13,6 +13,9 @@ import com.example.tuf.data.local.entity.BudgetEntity
 import com.example.tuf.data.local.entity.CategoryEntity
 import com.example.tuf.data.local.entity.RecurringTransactionEntity
 import com.example.tuf.data.local.entity.TransactionEntity
+import com.example.tuf.data.local.entity.SplitGroupEntity
+import com.example.tuf.data.local.entity.SplitExpenseEntity
+import androidx.room.migration.Migration
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -28,9 +31,11 @@ import kotlinx.coroutines.launch
         TransactionEntity::class,
         CategoryEntity::class,
         BudgetEntity::class,
-        RecurringTransactionEntity::class
+        RecurringTransactionEntity::class,
+        SplitGroupEntity::class,
+        SplitExpenseEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -39,12 +44,26 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun categoryDao(): CategoryDao
     abstract fun budgetDao(): BudgetDao
     abstract fun recurringDao(): RecurringDao
+    abstract fun splitDao(): com.example.tuf.data.local.dao.SplitDao
 
     companion object {
         private const val DATABASE_NAME = "finance_db"
 
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `split_groups` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `members` TEXT NOT NULL)"
+                )
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `split_expenses` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `groupId` INTEGER NOT NULL, `description` TEXT NOT NULL, `totalAmount` REAL NOT NULL, `paidBy` TEXT NOT NULL, `splitType` TEXT NOT NULL, `splitsJson` TEXT NOT NULL, `date` INTEGER NOT NULL, FOREIGN KEY(`groupId`) REFERENCES `split_groups`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)"
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_split_expenses_groupId` ON `split_expenses` (`groupId`)")
+            }
+        }
+
         fun create(context: Context): AppDatabase {
             return Room.databaseBuilder(context, AppDatabase::class.java, DATABASE_NAME)
+                .addMigrations(MIGRATION_1_2)
                 .addCallback(DatabaseCallback())
                 .build()
         }
